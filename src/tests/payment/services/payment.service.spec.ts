@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { MercadoPagoClient } from '../../../modules/payment/clients/mercadoPago.client';
+import { Payment } from '../../../modules/payment/entities/payment.entity';
 import { CreatePaymentDto } from '../../../modules/payment/models/create-payment';
 import { PaymentService } from '../../../modules/payment/services/payment.service';
 
 describe('paymentService', () => {
   let service: PaymentService;
   let mercadoPago: jest.Mocked<MercadoPagoClient>;
+  let paymentRepo: jest.Mocked<Pick<import('typeorm').Repository<Payment>, 'findOneBy' | 'save'>>;
 
   const mockMpOrder = {
     capture_mode: 'automatic_async',
@@ -44,11 +47,22 @@ describe('paymentService', () => {
     },
   };
 
+  const mockPaymentEntity: Payment = {
+    orderId: 'ORDTST01KS5AJ6',
+    serviceOrderId: 42,
+  };
+
   beforeEach(async () => {
+    paymentRepo = {
+      findOneBy: jest.fn(),
+      save: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentService,
         { provide: MercadoPagoClient, useValue: { cancelOrder: jest.fn(), createOrder: jest.fn(), getOrder: jest.fn() } },
+        { provide: getRepositoryToken(Payment), useValue: paymentRepo },
       ],
     }).compile();
 
@@ -63,6 +77,7 @@ describe('paymentService', () => {
   describe('createPayment', () => {
     it('should create a payment and return checkout URL', async () => {
       mercadoPago.createOrder.mockResolvedValue(mockMpOrder as any);
+      paymentRepo.save.mockResolvedValue(mockPaymentEntity);
 
       const result = await service.createPayment(createPaymentDto);
 
@@ -74,10 +89,15 @@ describe('paymentService', () => {
         totalAmount: '1500.00',
       });
       expect(mercadoPago.createOrder).toHaveBeenCalledTimes(1);
+      expect(paymentRepo.save).toHaveBeenCalledWith({
+        orderId: 'ORDTST01KS5AJ6',
+        serviceOrderId: 42,
+      });
     });
 
     it('should pass correct body to createOrder', async () => {
       mercadoPago.createOrder.mockResolvedValue(mockMpOrder as any);
+      paymentRepo.save.mockResolvedValue(mockPaymentEntity);
 
       await service.createPayment(createPaymentDto);
 
@@ -118,6 +138,7 @@ describe('paymentService', () => {
 
     it('should use custom description when provided', async () => {
       mercadoPago.createOrder.mockResolvedValue(mockMpOrder as any);
+      paymentRepo.save.mockResolvedValue(mockPaymentEntity);
 
       await service.createPayment({ ...createPaymentDto, description: 'Manutenção do motor' });
 
@@ -128,6 +149,7 @@ describe('paymentService', () => {
 
     it('should handle name with single word (no last name)', async () => {
       mercadoPago.createOrder.mockResolvedValue(mockMpOrder as any);
+      paymentRepo.save.mockResolvedValue(mockPaymentEntity);
 
       await service.createPayment({ ...createPaymentDto, payer: { ...createPaymentDto.payer, name: 'Cher' } });
 
@@ -140,6 +162,7 @@ describe('paymentService', () => {
 
     it('should handle CNPJ document type', async () => {
       mercadoPago.createOrder.mockResolvedValue(mockMpOrder as any);
+      paymentRepo.save.mockResolvedValue(mockPaymentEntity);
 
       await service.createPayment({
         ...createPaymentDto,
@@ -164,27 +187,38 @@ describe('paymentService', () => {
 
   describe('getPaymentStatus', () => {
     it('should return payment status', async () => {
+      paymentRepo.findOneBy.mockResolvedValue(mockPaymentEntity);
       mercadoPago.getOrder.mockResolvedValue({ ...mockMpOrder, status: 'processed', status_detail: 'accredited' } as any);
 
-      const result = await service.getPaymentStatus('ORDTST01KS5AJ6');
+      const result = await service.getPaymentStatus(42);
 
+      expect(paymentRepo.findOneBy).toHaveBeenCalledWith({ serviceOrderId: 42 });
+      expect(mercadoPago.getOrder).toHaveBeenCalledWith('ORDTST01KS5AJ6');
       expect(result).toEqual({
         createdAt: '2026-11-16T10:00:00.000-03:00',
         externalReference: 'so-42',
         lastUpdatedAt: '2026-11-16T10:00:00.000-03:00',
         orderId: 'ORDTST01KS5AJ6',
+        serviceOrderId: 42,
         status: 'processed',
         statusDetail: 'accredited',
         totalAmount: '1500.00',
         totalPaidAmount: '0.00',
       });
-      expect(mercadoPago.getOrder).toHaveBeenCalledWith('ORDTST01KS5AJ6');
     });
 
-    it('should throw NotFoundException when order is null', async () => {
+    it('should throw NotFoundException when payment not found in DB', async () => {
+      paymentRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(service.getPaymentStatus(99)).rejects.toThrow(NotFoundException);
+      expect(mercadoPago.getOrder).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when MP order is null', async () => {
+      paymentRepo.findOneBy.mockResolvedValue(mockPaymentEntity);
       mercadoPago.getOrder.mockResolvedValue(null as any);
 
-      await expect(service.getPaymentStatus('INVALID_ID')).rejects.toThrow(NotFoundException);
+      await expect(service.getPaymentStatus(42)).rejects.toThrow(NotFoundException);
     });
   });
 
