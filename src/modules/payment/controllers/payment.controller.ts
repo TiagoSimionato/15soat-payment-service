@@ -8,18 +8,18 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post()
-  async create(@Body() dto: CreatePaymentDto): Promise<PaymentResponseDto> {
+  async createPayment(@Body() dto: CreatePaymentDto): Promise<PaymentResponseDto> {
     return this.paymentService.createPayment(dto);
   }
 
   @Get(':orderId')
-  async getStatus(@Param('orderId') orderId: string) {
+  async getPaymentStatus(@Param('orderId') orderId: string) {
     return this.paymentService.getPaymentStatus(orderId);
   }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  async webhook(@Body() body: any) {
+  async handleWebhook(@Body() body: any) {
     return this.paymentService.handleWebhook(body);
   }
 }
