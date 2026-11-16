@@ -1,5 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { MercadoPagoClient } from '../clients/mercadoPago.client';
+import { Payment } from '../entities/payment.entity';
 import { CreatePaymentDto } from '../models/create-payment';
 import { PaymentResponseDto } from '../models/payment.dto';
 
@@ -9,6 +12,8 @@ export class PaymentService {
 
   constructor(
     private readonly mercadoPago: MercadoPagoClient,
+    @InjectRepository(Payment)
+    private readonly paymentRepo: Repository<Payment>,
   ) {}
 
   async createPayment(dto: CreatePaymentDto): Promise<PaymentResponseDto> {
@@ -53,6 +58,11 @@ export class PaymentService {
       type: 'online',
     });
 
+    await this.paymentRepo.save({
+      orderId: mpOrder.id,
+      serviceOrderId: dto.serviceOrderId,
+    });
+
     this.logger.log(`Payment created for service order ${dto.serviceOrderId}: ${mpOrder.id}`);
 
     return {
@@ -64,8 +74,14 @@ export class PaymentService {
     };
   }
 
-  async getPaymentStatus(orderId: string) {
-    const mpOrder = await this.mercadoPago.getOrder(orderId);
+  async getPaymentStatus(serviceOrderId: number) {
+    const payment = await this.paymentRepo.findOneBy({ serviceOrderId });
+
+    if (!payment) {
+      throw new NotFoundException(`Payment not found for service order ${serviceOrderId}`);
+    }
+
+    const mpOrder = await this.mercadoPago.getOrder(payment.orderId);
 
     if (!mpOrder) {
       throw new NotFoundException('Payment not found');
@@ -76,6 +92,7 @@ export class PaymentService {
       externalReference: mpOrder.external_reference,
       lastUpdatedAt: mpOrder.last_updated_date,
       orderId: mpOrder.id,
+      serviceOrderId,
       status: mpOrder.status,
       statusDetail: mpOrder.status_detail,
       totalAmount: mpOrder.total_amount,

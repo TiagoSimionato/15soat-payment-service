@@ -10,7 +10,7 @@ describe('paymentController', () => {
 
   const mockPaymentService = {
     createPayment: jest.fn<(dto: CreatePaymentDto) => Promise<PaymentResponseDto>>(),
-    getPaymentStatus: jest.fn<(orderId: string) => Promise<PaymentResponseDto>>(),
+    getPaymentStatus: jest.fn<(serviceOrderId: number) => Promise<PaymentResponseDto>>(),
     handleWebhook: jest.fn<(body: any) => Promise<{ received: boolean }>>(),
   };
 
@@ -42,6 +42,7 @@ describe('paymentController', () => {
     externalReference: 'so-42',
     lastUpdatedAt: '2026-11-16T12:00:00.000-03:00',
     orderId: 'ORDTST01KS5AJ6',
+    serviceOrderId: 42,
     status: 'processed',
     statusDetail: 'accredited',
     totalAmount: '1500.00',
@@ -97,18 +98,18 @@ describe('paymentController', () => {
     it('should return payment status', async () => {
       mockPaymentService.getPaymentStatus.mockResolvedValue(mockStatusResponse as any);
 
-      const result = await controller.getPaymentStatus('ORDTST01KS5AJ6');
+      const result = await controller.getPaymentStatus(42);
 
-      expect(mockPaymentService.getPaymentStatus).toHaveBeenCalledWith('ORDTST01KS5AJ6');
+      expect(mockPaymentService.getPaymentStatus).toHaveBeenCalledWith(42);
       expect(result).toEqual(mockStatusResponse);
     });
 
-    it('should accept different order IDs', async () => {
-      mockPaymentService.getPaymentStatus.mockResolvedValue({ ...mockStatusResponse, orderId: 'ORDTST01XYZ' } as any);
+    it('should accept different service order IDs', async () => {
+      mockPaymentService.getPaymentStatus.mockResolvedValue({ ...mockStatusResponse, serviceOrderId: 99 } as any);
 
-      await controller.getPaymentStatus('ORDTST01XYZ');
+      await controller.getPaymentStatus(99);
 
-      expect(mockPaymentService.getPaymentStatus).toHaveBeenCalledWith('ORDTST01XYZ');
+      expect(mockPaymentService.getPaymentStatus).toHaveBeenCalledWith(99);
     });
   });
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { CreatePaymentDto } from '../models/create-payment';
 import { PaymentResponseDto } from '../models/payment.dto';
 import { PaymentService } from '../services/payment.service';
@@ -12,9 +12,9 @@ export class PaymentController {
     return this.paymentService.createPayment(dto);
   }
 
-  @Get(':orderId')
-  async getPaymentStatus(@Param('orderId') orderId: string) {
-    return this.paymentService.getPaymentStatus(orderId);
+  @Get(':serviceOrderId')
+  async getPaymentStatus(@Param('serviceOrderId', ParseIntPipe) serviceOrderId: number) {
+    return this.paymentService.getPaymentStatus(serviceOrderId);
   }
 
   @Post('webhook')
