@@ -1,11 +1,11 @@
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, PrimaryColumn, Unique } from 'typeorm';
 
 @Entity({ name: 'tb_payment' })
 @Unique(['service_order_id'])
-export class User {
-  @Column({ primary: true })
+export class Payment {
+  @PrimaryColumn()
   orderId: string;
 
-  @Column({ nullable: false })
-  service_order_id: number;
+  @Column({ name: 'service_order_id' })
+  serviceOrderId: number;
 }
