@@ -9,6 +9,10 @@ export class MercadoPagoClient extends HttpClient {
   protected readonly serviceUrl = 'https://api.mercadopago.com';
 
   protected async getBearerToken(): Promise<string> {
+    if (this.mpAccessToken) {
+      return this.mpAccessToken;
+    }
+
     if (this.cachedToken && Date.now() < this.tokenExpiry - 30_000) {
       return this.cachedToken;
     }

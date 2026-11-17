@@ -77,6 +77,11 @@ resource "kubernetes_deployment" "payment-app" {
             name = "DB_PORT"
             value = var.db_port
           }
+
+          env {
+            name = "MP_ACCESS_TOKEN"
+            value = var.mp_access_token
+          }
           
           env {
             name  = "JWT_SECRET"

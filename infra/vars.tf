@@ -7,6 +7,7 @@ variable "namespace" {
 }
 
 variable "image"                       {}
+variable "mp_access_token"             {}
 variable "postgres_user"               {}
 variable "postgres_password"           {}
 variable "postgres_db"                 {}

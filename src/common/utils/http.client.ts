@@ -15,6 +15,7 @@ export abstract class HttpClient {
   protected readonly clientId: string = `${process.env.CLIENT_ID}`;
   protected readonly clientSecret: string = `${process.env.CLIENT_SECRET}`;
   protected readonly authorizationServerUrl: string = `${process.env.AUTHORIZATION_SERVER_URL}/auth/token`;
+  protected readonly mpAccessToken: string | undefined = process.env.MP_ACCESS_TOKEN;
 
   protected abstract readonly serviceUrl: string;
 
@@ -24,10 +25,13 @@ export abstract class HttpClient {
   constructor(protected readonly httpService: HttpService) {}
 
   protected async getBearerToken(): Promise<string> {
+    if (this.mpAccessToken) {
+      return this.mpAccessToken;
+    }
+
     if (this.cachedToken && Date.now() < this.tokenExpiry - 30_000) {
       return this.cachedToken;
     }
-
     this.logger.debug('Fetching new access token from', this.authorizationServerUrl);
 
     const credentials = `${this.clientId}:${this.clientSecret}`;

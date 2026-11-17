@@ -39,8 +39,6 @@ export class PaymentService {
           description: `${dto.vehicle.model} - ${dto.vehicle.plate}`,
           quantity: 1,
           title: `Ordem de serviço #${dto.serviceOrderId}`,
-          total_amount: amount,
-          unit_measure: 'unit',
           unit_price: amount,
         },
       ],
@@ -87,17 +85,7 @@ export class PaymentService {
       throw new NotFoundException('Payment not found');
     }
 
-    return {
-      createdAt: mpOrder.created_date,
-      externalReference: mpOrder.external_reference,
-      lastUpdatedAt: mpOrder.last_updated_date,
-      orderId: mpOrder.id,
-      serviceOrderId,
-      status: mpOrder.status,
-      statusDetail: mpOrder.status_detail,
-      totalAmount: mpOrder.total_amount,
-      totalPaidAmount: mpOrder.total_paid_amount,
-    };
+    return mpOrder;
   }
 
   async handleWebhook(body: any) {
