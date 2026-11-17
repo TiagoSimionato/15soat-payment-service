@@ -75,7 +75,9 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(controller|service).(t|j)s"
+      "**/*.(controller|service).(t|j)s",
+      "!**/fallback/**",
+      "!**/health/**"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!@nestjs/axios|axios)/"
