@@ -66,6 +66,7 @@ jobs:
 
       - name: Terraform Init and Apply
         env:
+          TF_VAR_mp_access_token:             ${{ vars.MP_ACCESS_TOKEN }}
           TF_VAR_postgres_user:               ${{ secrets.DB_USER }}
           TF_VAR_postgres_password:           ${{ secrets.DB_PASSWORD }}
           TF_VAR_postgres_db:                 ${{ vars.DB_NAME }}

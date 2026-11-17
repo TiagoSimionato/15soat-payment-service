@@ -6,7 +6,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -19,8 +18,6 @@ export class PayerDto {
   email: string;
 
   @IsString()
-  @Matches(/^\d{11}$/, { message: 'CPF must be 11 digits' })
-  @Matches(/^\d{14}$/, { message: 'CNPJ must be 14 digits' })
   document: string;
 
   @IsIn(['CPF', 'CNPJ'])
